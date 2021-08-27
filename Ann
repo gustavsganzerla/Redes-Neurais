@@ -1,0 +1,74 @@
+
+
+df <- read.csv("/Users/gustavosganzerla/Desktop/project_arp/arp_a_novel_tool_to_predict_promoter_elements/ann/data/tata_bre/tk_and_shuffled.csv", sep = ";")
+df3 <-read.csv("/Users/gustavosganzerla/Desktop/project_arp/arp_a_novel_tool_to_predict_promoter_elements/ann/data/tata_bre/lones/tk.csv", sep = ";")
+
+for (i in 2:2){#for dos neuronios
+  for (j in 1:1) {#for das epocas
+    j <- 15
+    
+    nn <- neuralnet(label~bre1+bre2+tata1+tata2+tata3+tata4+tata5,
+                    hidden = i,
+                    data = df,
+                    err.fct = "ce",
+                    linear.output = FALSE,
+                    lifesign = "minimal",
+                    rep = j,
+                    stepmax = 200000)
+    
+    write.table(nn$net.result[1], paste("TK_Hidden", i, "Epochs",j, ".txt"))
+    
+    
+    
+    
+    if (file.info(paste("TK_Hidden", i, "Epochs",j,  ".txt"))$size > 10) {#somente cria matrizes de redes que convergiram
+      
+      ###Validar a rede
+      validar <- compute(nn, df3)
+      write.table(validar$net.result, paste("TK_Hidden", i, "Epochs",j , ".txt"))
+      
+      
+    }
+    
+    
+    
+    
+  }
+}
+
+###carregar saida da ANN
+hvo_ann <- import("/Users/gustavosganzerla/Desktop/project_arp/arp_a_novel_tool_to_predict_promoter_elements/operonic/ann/HVO_Hidden 2 Epochs 10 .txt")
+hvo_list <- import("/Users/gustavosganzerla/Desktop/project_arp/arp_a_novel_tool_to_predict_promoter_elements/operonic/lists/list_hvo.txt")
+
+is_promoter <- ifelse(hvo_ann[,-1]>0.5, "promoter", "non-promoter")
+final_list <- cbind(hvo_list, is_promoter)
+
+final_list <- subset(final_list, final_list$V3=="promoter" & final_list$is_promoter=="promoter")
+list_hvo <- data.frame(final_list$ID, final_list$result)
+
+write.table(list_hvo, "HVO_list", sep = "\t")
+
+##
+sso_ann <- import("/Users/gustavosganzerla/Desktop/project_arp/arp_a_novel_tool_to_predict_promoter_elements/operonic/ann/SSO_Hidden 2 Epochs 40 .txt")
+sso_list <- import("/Users/gustavosganzerla/Desktop/project_arp/arp_a_novel_tool_to_predict_promoter_elements/operonic/lists/list_sso.txt")
+
+is_promoter <- ifelse(sso_ann[,-1]>0.5, "promoter", "non-promoter")
+final_list <- cbind(sso_list, is_promoter)
+
+final_list <- subset(final_list, final_list$V3=="promoter" & final_list$is_promoter=="promoter")
+list_sso <- data.frame(final_list$ID, final_list$result)
+
+write.table(list_sso, "SSO_list", sep = "\t")
+
+##
+tk_ann <- import("/Users/gustavosganzerla/Desktop/project_arp/arp_a_novel_tool_to_predict_promoter_elements/operonic/ann/TK_Hidden 2 Epochs 15 .txt")
+tk_list <- import("/Users/gustavosganzerla/Desktop/project_arp/arp_a_novel_tool_to_predict_promoter_elements/operonic/lists/list_tk.txt")
+
+is_promoter <- ifelse(tk_ann[,-1]>0.5, "promoter", "non-promoter")
+final_list <- cbind(tk_list, is_promoter)
+
+final_list <- subset(final_list, final_list$result=="promoter" & final_list$is_promoter=="promoter")
+list_tk <- data.frame(final_list$ID, final_list$V4)
+
+write.table(list_tk, "TK_list", sep = "\t")
+
